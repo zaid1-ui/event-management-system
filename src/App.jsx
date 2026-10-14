@@ -1,6 +1,8 @@
 import { Link, Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import EventCard from "./components/EventCard";
+import { mockEvents } from "./features/events/mockEvents";
 
 function HomePage() {
   return (
@@ -43,16 +45,24 @@ function HomePage() {
         </p>
       </section>
 
-      <section className="coming-section container" id="categories">
-        <div className="coming-card">
-          <span className="coming-icon" aria-hidden="true">
-            ✳
+      <section className="events-section container" id="categories">
+        <div className="events-heading">
+          <div>
+            <span className="eyebrow">THE EVENT COLLECTION</span>
+            <h2>Find your next experience.</h2>
+            <p>
+              Explore a few of the experiences our platform will bring together.
+            </p>
+          </div>
+          <span className="events-count">
+            {mockEvents.length} featured events
           </span>
-          <h3>Great experiences start here.</h3>
-          <p>
-            Our event collection is coming next. Soon you'll be able to discover
-            real events and explore their details.
-          </p>
+        </div>
+
+        <div className="events-grid">
+          {mockEvents.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
         </div>
       </section>
     </>
