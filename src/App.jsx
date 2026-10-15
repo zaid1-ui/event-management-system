@@ -1,10 +1,66 @@
+import { useEffect, useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import EventCard from "./components/EventCard";
-import { mockEvents } from "./features/events/mockEvents";
+import { fetchEvents } from "./services/ticketmaster";
 
 function HomePage() {
+  const [events, setEvents] = useState([]);
+  const [keyword, setKeyword] = useState("");
+  const [category, setCategory] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadEvents() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await fetchEvents({
+          keyword,
+          classificationName: category,
+          page,
+          size: 12,
+        });
+
+        if (!ignore) {
+          setEvents(result.events);
+          setTotalPages(result.totalPages);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err.message || "Unable to load events.");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadEvents();
+
+    return () => {
+      ignore = true;
+    };
+  }, [keyword, category, page]);
+
+  function handleSearch(event) {
+    event.preventDefault();
+    setPage(0);
+  }
+
+  function handleCategoryChange(event) {
+    setCategory(event.target.value);
+    setPage(0);
+  }
+
   return (
     <>
       <section className="hero">
@@ -50,20 +106,102 @@ function HomePage() {
           <div>
             <span className="eyebrow">THE EVENT COLLECTION</span>
             <h2>Find your next experience.</h2>
-            <p>
-              Explore a few of the experiences our platform will bring together.
-            </p>
+            <p>Search real events and filter by category.</p>
           </div>
           <span className="events-count">
-            {mockEvents.length} featured events
+            {loading ? "Loading events..." : `${events.length} events shown`}
           </span>
         </div>
 
-        <div className="events-grid">
-          {mockEvents.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </div>
+        <form className="event-filters" onSubmit={handleSearch}>
+          <label className="search-field">
+            <span>Search events</span>
+            <input
+              type="search"
+              placeholder="Try a concert, artist, or event..."
+              value={keyword}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setPage(0);
+              }}
+            />
+          </label>
+
+          <label className="category-field">
+            <span>Category</span>
+            <select value={category} onChange={handleCategoryChange}>
+              <option value="">All categories</option>
+              <option value="Music">Music</option>
+              <option value="Sports">Sports</option>
+              <option value="Arts & Theatre">Arts & Theatre</option>
+              <option value="Film">Film</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+          </label>
+
+          <button className="button filter-button" type="submit">
+            Search
+          </button>
+        </form>
+
+        {error && (
+          <div className="events-message error-message" role="alert">
+            <h3>Couldn't load events</h3>
+            <p>{error}</p>
+            <button
+              className="button"
+              type="button"
+              onClick={() => setPage((current) => current)}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {loading && !error && (
+          <p className="events-message" role="status">
+            Loading events from Ticketmaster...
+          </p>
+        )}
+
+        {!loading && !error && events.length === 0 && (
+          <div className="events-message">
+            <h3>No events found</h3>
+            <p>Try another search term or select a different category.</p>
+          </div>
+        )}
+
+        {!error && events.length > 0 && (
+          <div className="events-grid">
+            {events.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="button button-outline"
+              type="button"
+              disabled={page === 0}
+              onClick={() => setPage((current) => current - 1)}
+            >
+              Previous
+            </button>
+            <span>
+              Page {page + 1} of {totalPages}
+            </span>
+            <button
+              className="button button-outline"
+              type="button"
+              disabled={page + 1 >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </section>
     </>
   );
