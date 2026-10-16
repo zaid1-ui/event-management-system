@@ -1,47 +1,50 @@
 import { useEffect, useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import EventCard from "./components/EventCard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import { fetchEvents } from "./services/ticketmaster";
+
 import EventDetailsPage from "./pages/EventDetailsPage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
+import MyEventsPage from "./pages/MyEventsPage";
 
 function HomePage() {
   const [events, setEvents] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("");
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    let ignore = false;
+    let cancelled = false;
 
     async function loadEvents() {
       setLoading(true);
       setError("");
 
       try {
-        const result = await fetchEvents({
+        const results = await fetchEvents({
           keyword,
-          classificationName: category,
+          category,
           page,
-          size: 12,
         });
 
-        if (!ignore) {
-          setEvents(result.events);
-          setTotalPages(result.totalPages);
+        if (!cancelled) {
+          setEvents(results);
         }
       } catch (err) {
-        if (!ignore) {
-          setError(err.message || "Unable to load events.");
+        if (!cancelled) {
+          setError(err.message || "Unable to load events. Please try again.");
+          setEvents([]);
         }
       } finally {
-        if (!ignore) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
@@ -50,12 +53,12 @@ function HomePage() {
     loadEvents();
 
     return () => {
-      ignore = true;
+      cancelled = true;
     };
   }, [keyword, category, page]);
 
-  function handleSearch(event) {
-    event.preventDefault();
+  function handleKeywordChange(event) {
+    setKeyword(event.target.value);
     setPage(0);
   }
 
@@ -64,157 +67,107 @@ function HomePage() {
     setPage(0);
   }
 
+  function handleRetry() {
+    setPage((currentPage) => currentPage + 1);
+    setPage((currentPage) => currentPage);
+  }
+
   return (
-    <>
-      <section className="hero">
-        <div className="container hero-content">
-          <span className="eyebrow">YOUR NEXT EXPERIENCE STARTS HERE</span>
-          <h1>
-            Find your people.
-            <br />
-            <span>Feel the moment.</span>
-          </h1>
-          <p>
-            Discover concerts, festivals, sports, and experiences worth
-            remembering.
-          </p>
-          <div className="hero-actions">
-            <a className="button" href="#events">
-              Explore events <span aria-hidden="true">→</span>
-            </a>
-            <Link className="button button-outline" to="/register">
-              Join Eventra
-            </Link>
-          </div>
-          <div className="hero-note">
-            <span className="status-dot" />
-            Your next favorite experience is out there.
-          </div>
-        </div>
-      </section>
+    <main>
+      <section className="hero container">
+        <span className="eyebrow">DISCOVER YOUR NEXT EXPERIENCE</span>
 
-      <section className="intro-section container" id="events">
-        <div>
-          <span className="eyebrow">MADE FOR THE MOMENTS THAT MATTER</span>
-          <h2>Something worth going out for.</h2>
-        </div>
+        <h1>
+          Find events.
+          <br />
+          Make <span>memories.</span>
+        </h1>
+
         <p>
-          From live music to unforgettable match days, find events that bring
-          people together.
+          Explore concerts, sports, arts, and live experiences happening near
+          you.
         </p>
+
+        <a href="#discover" className="primary-button">
+          Explore Events
+        </a>
       </section>
 
-      <section className="events-section container" id="categories">
-        <div className="events-heading">
+      <section className="events-section container" id="discover">
+        <div className="section-heading">
           <div>
-            <span className="eyebrow">THE EVENT COLLECTION</span>
-            <h2>Find your next experience.</h2>
-            <p>Search real events and filter by category.</p>
+            <span className="eyebrow">WHAT'S HAPPENING</span>
+            <h2>Discover events</h2>
           </div>
-          <span className="events-count">
-            {loading ? "Loading events..." : `${events.length} events shown`}
-          </span>
+
+          <span className="event-count">{events.length} events</span>
         </div>
 
-        <form className="event-filters" onSubmit={handleSearch}>
-          <label className="search-field">
-            <span>Search events</span>
-            <input
-              type="search"
-              placeholder="Try a concert, artist, or event..."
-              value={keyword}
-              onChange={(event) => {
-                setKeyword(event.target.value);
-                setPage(0);
-              }}
-            />
-          </label>
+        <div className="event-filters">
+          <input
+            type="search"
+            value={keyword}
+            onChange={handleKeywordChange}
+            placeholder="Search events..."
+            aria-label="Search events"
+          />
 
-          <label className="category-field">
-            <span>Category</span>
-            <select value={category} onChange={handleCategoryChange}>
-              <option value="">All categories</option>
-              <option value="Music">Music</option>
-              <option value="Sports">Sports</option>
-              <option value="Arts & Theatre">Arts & Theatre</option>
-              <option value="Film">Film</option>
-              <option value="Miscellaneous">Miscellaneous</option>
-            </select>
-          </label>
+          <select
+            value={category}
+            onChange={handleCategoryChange}
+            aria-label="Filter events by category"
+          >
+            <option value="">All categories</option>
+            <option value="KZFzniwnSyZfZ7v7nJ">Music</option>
+            <option value="KZFzniwnSyZfZ7v7nE">Sports</option>
+            <option value="KZFzniwnSyZfZ7v7na">Arts & Theatre</option>
+            <option value="KZFzniwnSyZfZ7v7nn">Family</option>
+            <option value="KZFzniwnSyZfZ7v7n1">Film</option>
+          </select>
+        </div>
 
-          <button className="button filter-button" type="submit">
-            Search
-          </button>
-        </form>
+        {loading && <p className="status-message">Loading events...</p>}
 
-        {error && (
-          <div className="events-message error-message" role="alert">
-            <h3>Couldn't load events</h3>
+        {!loading && error && (
+          <div className="status-message">
             <p>{error}</p>
             <button
-              className="button"
               type="button"
-              onClick={() => setPage((current) => current)}
+              className="primary-button"
+              onClick={handleRetry}
             >
               Try again
             </button>
           </div>
         )}
 
-        {loading && !error && (
-          <p className="events-message" role="status">
-            Loading events from Ticketmaster...
+        {!loading && !error && events.length === 0 && (
+          <p className="status-message">
+            No events found. Try a different search or category.
           </p>
         )}
 
-        {!loading && !error && events.length === 0 && (
-          <div className="events-message">
-            <h3>No events found</h3>
-            <p>Try another search term or select a different category.</p>
-          </div>
-        )}
-
-        {!error && events.length > 0 && (
+        {!loading && !error && events.length > 0 && (
           <div className="events-grid">
             {events.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>
         )}
-
-        {!loading && !error && totalPages > 1 && (
-          <div className="pagination">
-            <button
-              className="button button-outline"
-              type="button"
-              disabled={page === 0}
-              onClick={() => setPage((current) => current - 1)}
-            >
-              Previous
-            </button>
-            <span>
-              Page {page + 1} of {totalPages}
-            </span>
-            <button
-              className="button button-outline"
-              type="button"
-              disabled={page + 1 >= totalPages}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </button>
-          </div>
-        )}
       </section>
-    </>
+    </main>
   );
 }
 
 function NotFoundPage() {
   return (
     <main className="container not-found">
+      <span className="eyebrow">404 ERROR</span>
       <h1>Page not found</h1>
-      <Link to="/">Return home</Link>
+      <p>The page you're looking for doesn't exist.</p>
+      <Link to="/" className="primary-button">
+        Back to events
+      </Link>
     </main>
   );
 }
@@ -223,13 +176,28 @@ function App() {
   return (
     <>
       <Navbar />
+
       <Routes>
         <Route path="/" element={<HomePage />} />
+
         <Route path="/events/:id" element={<EventDetailsPage />} />
+
         <Route path="/register" element={<RegisterPage />} />
+
         <Route path="/login" element={<LoginPage />} />
+
+        <Route
+          path="/my-events"
+          element={
+            <ProtectedRoute>
+              <MyEventsPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+
       <Footer />
     </>
   );

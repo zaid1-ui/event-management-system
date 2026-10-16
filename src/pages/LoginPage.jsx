@@ -1,29 +1,32 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../features/auth/authSlice";
 
 function LoginPage() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
   function handleSubmit(event) {
     event.preventDefault();
-    setError("");
 
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanEmail || !password) {
+    if (!cleanEmail || !password.trim()) {
       setError("Please enter your email and password.");
       return;
     }
 
-    // Simulated login for this assignment.
-    // Real account verification requires a backend.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     dispatch(
       login({
         name: cleanEmail.split("@")[0],
@@ -31,43 +34,54 @@ function LoginPage() {
       }),
     );
 
-    navigate("/");
+    const from = location.state?.from?.pathname || "/";
+    navigate(from, { replace: true });
   }
 
   return (
     <main className="auth-page container">
       <section className="auth-card">
         <span className="eyebrow">WELCOME BACK</span>
+
         <h1>Log in to Eventra</h1>
-        <p>Sign in to continue exploring your next experience.</p>
+
+        <p className="auth-description">
+          Sign in to manage your events and discover what's happening next.
+        </p>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <label htmlFor="login-email">Email address</label>
+          <label htmlFor="email">Email address</label>
           <input
-            id="login-email"
+            id="email"
             type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError("");
+            }}
             autoComplete="email"
             required
           />
 
-          <label htmlFor="login-password">Password</label>
+          <label htmlFor="password">Password</label>
           <input
-            id="login-password"
+            id="password"
             type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             placeholder="Enter your password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError("");
+            }}
             autoComplete="current-password"
             required
           />
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && <p className="form-error">{error}</p>}
 
-          <button className="button auth-submit" type="submit">
-            Log in
+          <button type="submit" className="primary-button">
+            Log In
           </button>
         </form>
 
