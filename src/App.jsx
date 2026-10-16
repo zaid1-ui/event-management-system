@@ -5,6 +5,8 @@ import Footer from "./components/Footer";
 import EventCard from "./components/EventCard";
 import { fetchEvents } from "./services/ticketmaster";
 import EventDetailsPage from "./pages/EventDetailsPage";
+import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
 
 function HomePage() {
   const [events, setEvents] = useState([]);
@@ -224,6 +226,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/events/:id" element={<EventDetailsPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Footer />
