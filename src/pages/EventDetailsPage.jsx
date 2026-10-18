@@ -1,12 +1,31 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
 import { fetchEvents } from "../services/ticketmaster";
+import { registerEvent } from "../features/registrations/registrationsSlice";
 
 function EventDetailsPage() {
   const { id } = useParams();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+
+  const registrations = useSelector((state) => {
+    const email = state.auth.user?.email?.trim().toLowerCase();
+    return email ? state.registrations[email] || [] : [];
+  });
+
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const isRegistered = registrations.some(
+    (registeredEvent) => String(registeredEvent.id) === String(id),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -17,6 +36,7 @@ function EventDetailsPage() {
 
       try {
         const result = await fetchEvents({ size: 50 });
+
         const foundEvent = result.events.find(
           (item) => String(item.id) === String(id),
         );
@@ -45,6 +65,31 @@ function EventDetailsPage() {
       cancelled = true;
     };
   }, [id]);
+
+  function handleRegistration() {
+    setMessage("");
+
+    if (!isAuthenticated || !user?.email) {
+      navigate("/login", {
+        state: { from: location },
+      });
+      return;
+    }
+
+    if (isRegistered) {
+      setMessage("You're already registered for this event.");
+      return;
+    }
+
+    dispatch(
+      registerEvent({
+        email: user.email,
+        event,
+      }),
+    );
+
+    setMessage("You're registered for this event!");
+  }
 
   if (loading) {
     return (
@@ -84,14 +129,17 @@ function EventDetailsPage() {
           <p>
             <strong>Date:</strong> {event.date}
           </p>
+
           {event.time && (
             <p>
               <strong>Time:</strong> {event.time}
             </p>
           )}
+
           <p>
             <strong>Venue:</strong> {event.venue}
           </p>
+
           {event.location && (
             <p>
               <strong>Location:</strong> {event.location}
@@ -105,6 +153,25 @@ function EventDetailsPage() {
             {event.info ||
               "Get ready for this experience. Visit the official event page for more information."}
           </p>
+        </div>
+
+        <div className="registration-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={handleRegistration}
+            disabled={isRegistered}
+          >
+            {isRegistered ? "Already Registered" : "Register for Event"}
+          </button>
+
+          {message && (
+            <p className="status-message" role="status">
+              {message}
+            </p>
+          )}
+
+          {!isAuthenticated && <p>Log in to register for this event.</p>}
         </div>
 
         {event.url && (

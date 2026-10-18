@@ -18,6 +18,7 @@ function HomePage() {
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -29,14 +30,14 @@ function HomePage() {
       setError("");
 
       try {
-        const results = await fetchEvents({
+        const result = await fetchEvents({
           keyword,
           category,
           page,
         });
 
         if (!cancelled) {
-          setEvents(results);
+          setEvents(result.events);
         }
       } catch (err) {
         if (!cancelled) {
@@ -55,7 +56,7 @@ function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [keyword, category, page]);
+  }, [keyword, category, page, retryCount]);
 
   function handleKeywordChange(event) {
     setKeyword(event.target.value);
@@ -68,8 +69,7 @@ function HomePage() {
   }
 
   function handleRetry() {
-    setPage((currentPage) => currentPage + 1);
-    setPage((currentPage) => currentPage);
+    setRetryCount((count) => count + 1);
   }
 
   return (
@@ -131,6 +131,7 @@ function HomePage() {
         {!loading && error && (
           <div className="status-message">
             <p>{error}</p>
+
             <button
               type="button"
               className="primary-button"
@@ -165,6 +166,7 @@ function NotFoundPage() {
       <span className="eyebrow">404 ERROR</span>
       <h1>Page not found</h1>
       <p>The page you're looking for doesn't exist.</p>
+
       <Link to="/" className="primary-button">
         Back to events
       </Link>
